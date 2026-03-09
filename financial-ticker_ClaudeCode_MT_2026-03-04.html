@@ -22,8 +22,8 @@
 
   :root {
     --section-width: 2534.2857;
-    --design-width: 14080;
-    --design-height: 360;
+    --design-width: 17740;
+    --design-height: 458.062;
     --content-top: 81.6956px;
     --divider-height: 308.9719px;
     --section-right-pad: 98.5133px;
@@ -47,12 +47,17 @@
   }
 
   body {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .ticker-stage {
-    width: calc(var(--design-width) * 1px);
-    height: calc(var(--design-height) * 1px);
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     overflow: hidden;
   }
 
@@ -61,16 +66,13 @@
     height: calc(var(--design-height) * 1px);
     transform-origin: center center;
     will-change: transform;
-    overflow: hidden;
-    position: relative;
   }
 
   .ticker-bar {
     display: flex;
     align-items: stretch;
+    width: calc(var(--design-width) * 1px);
     height: calc(var(--design-height) * 1px);
-    width: max-content;
-    will-change: transform;
   }
 
   .ticker-item {
@@ -209,9 +211,7 @@
 
 <script>
 const SECTION_WIDTH = 2534.2857;
-const DESIGN_WIDTH = 14080;
-const DESIGN_HEIGHT = 360;
-const SCROLL_PX_PER_SEC = 35;
+const DESIGN_HEIGHT = 458.062;
 const tickers = [
   { label: "Djia",                        value: 47658, change: -41.72, pct: -0.09, trend: "down" },
   { label: "S&P 500",                     value:  6853, change:  +6.71, pct: +0.10, trend: "up"   },
@@ -221,16 +221,11 @@ const tickers = [
   { label: "Morningstar Global Markets",  value:  6853, change:  +6.71, pct: +0.10, trend: "up"   },
   { label: "Lumexa Imaging Holdings Inc", value: 47658, change: -81.72, pct: -0.25, trend: "down" },
 ];
+const DESIGN_WIDTH = SECTION_WIDTH * tickers.length;
 
 document.documentElement.style.setProperty('--section-width', SECTION_WIDTH);
 document.documentElement.style.setProperty('--design-width', DESIGN_WIDTH);
 document.documentElement.style.setProperty('--design-height', DESIGN_HEIGHT);
-
-let baseData = [...tickers];
-let cycleWidth = SECTION_WIDTH * baseData.length;
-let scrollX = 0;
-let lastTs = 0;
-let rafId = null;
 
 function generateSparkPath(trend, w, h, points = 20) {
   const pts = [];
@@ -261,94 +256,170 @@ function makeSvgSpark(trend, w = 420, h = 220) {
     </svg>`;
 }
 
+function normalizeTickerData(input) {
+  if (!Array.isArray(input)) return [];
+  return input.map((t, idx) => ({
+    label: String(t.label ?? `Ticker ${idx + 1}`),
+    value: Number(t.value ?? 0),
+    change: Number(t.change ?? 0),
+    pct: Number(t.pct ?? 0),
+    trend: (t.trend === 'up' || t.trend === 'down')
+      ? t.trend
+      : (Number(t.change ?? 0) >= 0 ? 'up' : 'down')
+  }));
+}
+
+function formatPrice(value) {
+  return Math.round(value).toLocaleString();
+}
+
+function formatSignedChange(value) {
+  const sign = value >= 0 ? '+' : '-';
+  return `${sign}${Math.abs(value).toFixed(2)}`;
+}
+
+function formatSignedPct(value) {
+  const sign = value >= 0 ? '+' : '-';
+  return `${sign}${Math.abs(value).toFixed(2)}%`;
+}
+
+function animateTickerValue(el, fromValue, toValue, durationMs = 1500) {
+  const from = Math.round(fromValue);
+  const to = Math.round(toValue);
+  if (from === to) {
+    el.textContent = formatPrice(to);
+    return;
+  }
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min((now - start) / durationMs, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const current = Math.round(from + (to - from) * eased);
+    el.textContent = formatPrice(current);
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function animateMetricValue(el, fromValue, toValue, formatter, durationMs = 1500) {
+  const from = Number(fromValue);
+  const to = Number(toValue);
+  if (Math.abs(from - to) < 0.005) {
+    el.textContent = formatter(to);
+    return;
+  }
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min((now - start) / durationMs, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const current = from + (to - from) * eased;
+    el.textContent = formatter(current);
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
 function renderTicker(data) {
   const bar = document.getElementById('tickerBar');
-  bar.innerHTML = data.map(t => {
+  bar.innerHTML = data.map((t, idx) => {
     const dir = t.trend;
     const cls = dir === 'up' ? 'up' : 'down';
     const arrow = dir === 'up' ? '▲' : '▼';
-    const sign = dir === 'up' ? '+' : '-';
-    const absStr = `${sign}${Math.abs(t.change).toFixed(2)}`;
-    const pctCore = `${sign}${Math.abs(t.pct).toFixed(2)}%`;
     const spark = makeSvgSpark(dir);
     return `
       <div class="ticker-item">
         <div class="ticker-content">
           <div class="ticker-label">${t.label}</div>
-          <div class="ticker-value">${t.value.toLocaleString()}</div>
+          <div class="ticker-value" data-idx="${idx}">${formatPrice(t.value)}</div>
           <div class="spark-wrap">${spark}</div>
           <div class="ticker-change ${cls}">
-            <span class="change-abs">${absStr}</span>
-            <span class="change-pct"><span class="pct-open">(</span>${pctCore}<span class="pct-close">)</span></span>
+            <span class="change-abs"><span class="change-abs-val" data-idx="${idx}">${formatSignedChange(t.change)}</span></span>
+            <span class="change-pct"><span class="pct-open">(</span><span class="pct-core" data-idx="${idx}">${formatSignedPct(t.pct)}</span><span class="pct-close">)</span></span>
           </div>
           <span class="arrow ${cls}">${arrow}</span>
         </div>
       </div>`;
   }).join('');
-  bar.style.width = `${SECTION_WIDTH * data.length}px`;
-}
 
-function jitter(arr) {
-  return arr.map(t => {
-    const delta = (Math.random() - 0.5) * 2;
-    const newChange = parseFloat((t.change + delta * 0.1).toFixed(2));
-    const newPct = parseFloat((t.pct + delta * 0.01).toFixed(2));
-    const newTrend = newChange >= 0 ? 'up' : 'down';
-    return { ...t, change: newChange, pct: newPct, trend: newTrend };
+  const valueEls = bar.querySelectorAll('.ticker-value');
+  valueEls.forEach((el, idx) => {
+    const target = Math.round(data[idx].value);
+    const from = displayedValueByIndex.has(idx) ? displayedValueByIndex.get(idx) : target;
+    animateTickerValue(el, from, target);
+    displayedValueByIndex.set(idx, target);
+  });
+
+  const changeEls = bar.querySelectorAll('.change-abs-val');
+  changeEls.forEach((el, idx) => {
+    const target = Number(data[idx].change);
+    const from = displayedChangeByIndex.has(idx) ? displayedChangeByIndex.get(idx) : target;
+    animateMetricValue(el, from, target, formatSignedChange);
+    displayedChangeByIndex.set(idx, target);
+  });
+
+  const pctEls = bar.querySelectorAll('.pct-core');
+  pctEls.forEach((el, idx) => {
+    const target = Number(data[idx].pct);
+    const from = displayedPctByIndex.has(idx) ? displayedPctByIndex.get(idx) : target;
+    animateMetricValue(el, from, target, formatSignedPct);
+    displayedPctByIndex.set(idx, target);
   });
 }
 
-function buildLoopData(data) {
-  return data.concat(data);
+function simulateMockStep(arr) {
+  return arr.map(t => {
+    const delta = (Math.random() - 0.5) * 2;
+    const priceStep = Math.max(1, Math.round(t.value * 0.0002));
+    const nextValue = Math.max(0, Math.round(t.value + delta * priceStep));
+    const nextChange = parseFloat((t.change + delta * 0.15).toFixed(2));
+    const nextPct = parseFloat(((nextChange / Math.max(nextValue, 1)) * 100).toFixed(2));
+    const nextTrend = nextChange >= 0 ? 'up' : 'down';
+    return { ...t, value: nextValue, change: nextChange, pct: nextPct, trend: nextTrend };
+  });
 }
 
-function renderScrollingTicker() {
-  cycleWidth = SECTION_WIDTH * baseData.length;
-  const loopData = buildLoopData(baseData);
-  renderTicker(loopData);
-  scrollX = 0;
-  const bar = document.getElementById('tickerBar');
-  bar.style.transform = 'translateX(0px)';
-}
-
-function tickScroll(ts) {
-  if (!lastTs) lastTs = ts;
-  const dt = (ts - lastTs) / 1000;
-  lastTs = ts;
-  scrollX += SCROLL_PX_PER_SEC * dt;
-  if (scrollX >= cycleWidth) scrollX -= cycleWidth;
-  const bar = document.getElementById('tickerBar');
-  bar.style.transform = `translateX(${-scrollX}px)`;
-  rafId = requestAnimationFrame(tickScroll);
-}
-
-function startTickerScroll() {
-  if (rafId) cancelAnimationFrame(rafId);
-  lastTs = 0;
-  rafId = requestAnimationFrame(tickScroll);
-}
+let liveData = normalizeTickerData(tickers);
+let mockTimerId = null;
+const displayedValueByIndex = new Map();
+const displayedChangeByIndex = new Map();
+const displayedPctByIndex = new Map();
 
 function setTickerData(nextData) {
-  if (!Array.isArray(nextData) || nextData.length === 0) return;
-  baseData = nextData.map(t => ({ ...t }));
-  renderScrollingTicker();
-  startTickerScroll();
+  const normalized = normalizeTickerData(nextData);
+  if (!normalized.length) return;
+  liveData = normalized;
+  renderTicker(liveData);
 }
 
-// Hook for future API integration:
-// fetch('/your-api-endpoint').then(r => r.json()).then(data => setTickerData(data));
-window.setTickerData = setTickerData;
-window.jitterMockData = () => setTickerData(jitter(baseData));
+function startMockUpdates(intervalMs = 3000) {
+  stopMockUpdates();
+  mockTimerId = setInterval(() => {
+    setTickerData(simulateMockStep(liveData));
+  }, intervalMs);
+}
 
-renderScrollingTicker();
-startTickerScroll();
+function stopMockUpdates() {
+  if (mockTimerId) clearInterval(mockTimerId);
+  mockTimerId = null;
+}
+
+window.setTickerData = setTickerData;
+window.startMockUpdates = startMockUpdates;
+window.stopMockUpdates = stopMockUpdates;
+
+setTickerData(tickers);
+startMockUpdates(3000);
 
 function scaleCanvasToViewport() {
   const canvas = document.getElementById('tickerCanvas');
-  canvas.style.transform = 'scale(1)';
+  const scaleX = window.innerWidth / DESIGN_WIDTH;
+  const scaleY = window.innerHeight / DESIGN_HEIGHT;
+  const scale = Math.min(scaleX, scaleY);
+  canvas.style.transform = `scale(${scale})`;
 }
 
 scaleCanvasToViewport();
+window.addEventListener('resize', scaleCanvasToViewport);
 </script>
 </body>
 </html>
