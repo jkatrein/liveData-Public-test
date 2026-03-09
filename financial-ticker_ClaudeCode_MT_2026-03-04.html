@@ -21,13 +21,17 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
+    --section-width: 2534.2857;
     --design-width: 14080;
     --design-height: 360;
+    --content-top: 81.6956px;
+    --divider-height: 308.9719px;
+    --section-right-pad: 98.5133px;
     --bar-bg: #111111;
-    --divider: #2a2a2a;
-    --up: #22c55e;
-    --down: #ef4444;
-    --label: #888;
+    --divider: rgb(100, 99, 96);
+    --up: rgb(3, 150, 72);
+    --down: rgb(227, 41, 38);
+    --label: #ffffff;
     --value: #ffffff;
   }
 
@@ -37,20 +41,18 @@
     overflow: hidden;
     background: var(--bar-bg);
     font-family: "MORN Intrinsic Web Regular", sans-serif;
+    font-kerning: normal;
+    font-feature-settings: "kern" 1;
+    text-rendering: optimizeLegibility;
   }
 
   body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
   }
 
   .ticker-stage {
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: calc(var(--design-width) * 1px);
+    height: calc(var(--design-height) * 1px);
     overflow: hidden;
   }
 
@@ -59,77 +61,139 @@
     height: calc(var(--design-height) * 1px);
     transform-origin: center center;
     will-change: transform;
+    overflow: hidden;
+    position: relative;
   }
 
   .ticker-bar {
     display: flex;
     align-items: stretch;
-    width: calc(var(--design-width) * 1px);
     height: calc(var(--design-height) * 1px);
+    width: max-content;
+    will-change: transform;
   }
 
   .ticker-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 40px;
-    padding: 30px 80px;
-    border-right: 2px solid var(--divider);
-    flex: 1;
+    width: calc(var(--section-width) * 1px);
+    min-width: calc(var(--section-width) * 1px);
+    height: calc(var(--design-height) * 1px);
+    flex: 0 0 auto;
     position: relative;
     transition: background 0.2s;
     cursor: default;
   }
-  .ticker-item:last-child { border-right: none; }
+
+  .ticker-item::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: var(--content-top);
+    width: 7px;
+    height: var(--divider-height);
+    background: var(--divider);
+  }
+
+  .ticker-item:first-child::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: var(--content-top);
+    width: 7px;
+    height: var(--divider-height);
+    background: var(--divider);
+  }
+
+  .ticker-content {
+    position: absolute;
+    top: var(--content-top);
+    left: 0;
+    right: var(--section-right-pad);
+    display: grid;
+    align-items: start;
+    grid-template-columns: 683.3563px 54.0936px max-content minmax(0, 1fr) 98.5133px 420px 98.5133px max-content 38.3596px 66px;
+  }
 
   .ticker-label {
+    grid-column: 1;
     font-family: "MORN Intrinsic Web Bold", sans-serif;
     font-weight: 700;
-    font-size: 42px;
+    font-size: 90px;
     color: var(--label);
     letter-spacing: 1px;
-    line-height: 1;
-    min-width: 220px;
-    padding-top: 18px;
+    line-height: 108px;
+    text-align: right;
   }
 
   .ticker-value {
+    grid-column: 3;
     font-family: "MORN Intrinsic Web Regular", sans-serif;
     font-weight: 400;
-    font-size: 120px;
+    font-size: 235px;
     color: var(--value);
     letter-spacing: -2px;
     font-variant-numeric: tabular-nums;
     line-height: 1;
+    text-align: right;
+  }
+
+  .spark-wrap {
+    grid-column: 6;
+    width: 420px;
+    height: 220px;
   }
 
   .chart-spark {
-    width: 280px;
-    height: 180px;
-    margin-top: 8px;
+    width: 420px;
+    height: 220px;
+    margin-top: 0;
   }
 
   .ticker-change {
+    grid-column: 8;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     gap: 6px;
-    padding-top: 18px;
     line-height: 1;
+    text-align: right;
   }
 
   .change-abs {
-    font-size: 42px;
+    font-family: "MORN Intrinsic Web Regular", sans-serif;
+    font-weight: 400;
+    font-size: 90px;
+    line-height: 108px;
     font-variant-numeric: tabular-nums;
   }
   .change-pct {
-    font-size: 36px;
+    display: inline-flex;
+    justify-content: flex-end;
+    align-items: flex-start;
+    font-family: "MORN Intrinsic Web Regular", sans-serif;
+    font-weight: 400;
+    font-size: 90px;
+    line-height: 108px;
     font-variant-numeric: tabular-nums;
     opacity: 0.85;
   }
 
+  .pct-open {
+    margin-left: -0.14em;
+  }
+
+  .pct-close {
+    margin-right: -0.22em;
+  }
+
   .arrow {
-    font-size: 32px;
-    margin-right: 4px;
+    grid-column: 10;
+    width: 66px;
+    display: inline-flex;
+    align-items: flex-start;
+    justify-content: center;
+    font-size: 92px;
+    line-height: 108px;
+    margin-top: 2px;
   }
 
   .up { color: var(--up); }
@@ -144,8 +208,10 @@
 </div>
 
 <script>
+const SECTION_WIDTH = 2534.2857;
 const DESIGN_WIDTH = 14080;
 const DESIGN_HEIGHT = 360;
+const SCROLL_PX_PER_SEC = 35;
 const tickers = [
   { label: "Djia",                        value: 47658, change: -41.72, pct: -0.09, trend: "down" },
   { label: "S&P 500",                     value:  6853, change:  +6.71, pct: +0.10, trend: "up"   },
@@ -155,6 +221,16 @@ const tickers = [
   { label: "Morningstar Global Markets",  value:  6853, change:  +6.71, pct: +0.10, trend: "up"   },
   { label: "Lumexa Imaging Holdings Inc", value: 47658, change: -81.72, pct: -0.25, trend: "down" },
 ];
+
+document.documentElement.style.setProperty('--section-width', SECTION_WIDTH);
+document.documentElement.style.setProperty('--design-width', DESIGN_WIDTH);
+document.documentElement.style.setProperty('--design-height', DESIGN_HEIGHT);
+
+let baseData = [...tickers];
+let cycleWidth = SECTION_WIDTH * baseData.length;
+let scrollX = 0;
+let lastTs = 0;
+let rafId = null;
 
 function generateSparkPath(trend, w, h, points = 20) {
   const pts = [];
@@ -167,8 +243,8 @@ function generateSparkPath(trend, w, h, points = 20) {
   return "M " + pts.map(p => p.join(",")).join(" L ");
 }
 
-function makeSvgSpark(trend, w = 280, h = 180) {
-  const color = trend === 'up' ? '#22c55e' : '#ef4444';
+function makeSvgSpark(trend, w = 420, h = 220) {
+  const color = trend === 'up' ? '#039648' : '#e32926';
   const path = generateSparkPath(trend, w, h);
   const fillPath = path + ` L ${w},${h} L 0,${h} Z`;
   const gradId = `grad_${trend}_${Math.random().toString(36).slice(2)}`;
@@ -191,21 +267,25 @@ function renderTicker(data) {
     const dir = t.trend;
     const cls = dir === 'up' ? 'up' : 'down';
     const arrow = dir === 'up' ? '▲' : '▼';
-    const sign = dir === 'up' ? '+' : '';
+    const sign = dir === 'up' ? '+' : '-';
     const absStr = `${sign}${Math.abs(t.change).toFixed(2)}`;
-    const pctStr = `(${sign}${Math.abs(t.pct).toFixed(2)}%)`;
+    const pctCore = `${sign}${Math.abs(t.pct).toFixed(2)}%`;
     const spark = makeSvgSpark(dir);
     return `
       <div class="ticker-item">
-        <div class="ticker-label">${t.label}</div>
-        <div class="ticker-value">${t.value.toLocaleString()}</div>
-        ${spark}
-        <div class="ticker-change ${cls}">
-          <span class="change-abs"><span class="arrow">${arrow}</span>${absStr}</span>
-          <span class="change-pct">${pctStr}</span>
+        <div class="ticker-content">
+          <div class="ticker-label">${t.label}</div>
+          <div class="ticker-value">${t.value.toLocaleString()}</div>
+          <div class="spark-wrap">${spark}</div>
+          <div class="ticker-change ${cls}">
+            <span class="change-abs">${absStr}</span>
+            <span class="change-pct"><span class="pct-open">(</span>${pctCore}<span class="pct-close">)</span></span>
+          </div>
+          <span class="arrow ${cls}">${arrow}</span>
         </div>
       </div>`;
   }).join('');
+  bar.style.width = `${SECTION_WIDTH * data.length}px`;
 }
 
 function jitter(arr) {
@@ -218,20 +298,57 @@ function jitter(arr) {
   });
 }
 
-let liveData = [...tickers];
-renderTicker(liveData);
-setInterval(() => { liveData = jitter(liveData); renderTicker(liveData); }, 3000);
+function buildLoopData(data) {
+  return data.concat(data);
+}
+
+function renderScrollingTicker() {
+  cycleWidth = SECTION_WIDTH * baseData.length;
+  const loopData = buildLoopData(baseData);
+  renderTicker(loopData);
+  scrollX = 0;
+  const bar = document.getElementById('tickerBar');
+  bar.style.transform = 'translateX(0px)';
+}
+
+function tickScroll(ts) {
+  if (!lastTs) lastTs = ts;
+  const dt = (ts - lastTs) / 1000;
+  lastTs = ts;
+  scrollX += SCROLL_PX_PER_SEC * dt;
+  if (scrollX >= cycleWidth) scrollX -= cycleWidth;
+  const bar = document.getElementById('tickerBar');
+  bar.style.transform = `translateX(${-scrollX}px)`;
+  rafId = requestAnimationFrame(tickScroll);
+}
+
+function startTickerScroll() {
+  if (rafId) cancelAnimationFrame(rafId);
+  lastTs = 0;
+  rafId = requestAnimationFrame(tickScroll);
+}
+
+function setTickerData(nextData) {
+  if (!Array.isArray(nextData) || nextData.length === 0) return;
+  baseData = nextData.map(t => ({ ...t }));
+  renderScrollingTicker();
+  startTickerScroll();
+}
+
+// Hook for future API integration:
+// fetch('/your-api-endpoint').then(r => r.json()).then(data => setTickerData(data));
+window.setTickerData = setTickerData;
+window.jitterMockData = () => setTickerData(jitter(baseData));
+
+renderScrollingTicker();
+startTickerScroll();
 
 function scaleCanvasToViewport() {
   const canvas = document.getElementById('tickerCanvas');
-  const scaleX = window.innerWidth / DESIGN_WIDTH;
-  const scaleY = window.innerHeight / DESIGN_HEIGHT;
-  const scale = Math.min(scaleX, scaleY);
-  canvas.style.transform = `scale(${scale})`;
+  canvas.style.transform = 'scale(1)';
 }
 
 scaleCanvasToViewport();
-window.addEventListener('resize', scaleCanvasToViewport);
 </script>
 </body>
 </html>
