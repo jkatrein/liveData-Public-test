@@ -25,7 +25,9 @@
     --design-width: 17740;
     --design-height: 458.062;
     --content-top: 81.6956px;
-    --top-align-nudge: -14px;
+    --top-align-small: -14px;
+    --top-align-large: -40px;
+    --top-align-arrow: -14px;
     --divider-height: 308.9719px;
     --section-right-pad: 98.5133px;
     --bar-bg: #111111;
@@ -67,13 +69,15 @@
     height: calc(var(--design-height) * 1px);
     transform-origin: center center;
     will-change: transform;
+    overflow: hidden;
   }
 
   .ticker-bar {
     display: flex;
     align-items: stretch;
-    width: calc(var(--design-width) * 1px);
+    width: max-content;
     height: calc(var(--design-height) * 1px);
+    will-change: transform;
   }
 
   .ticker-item {
@@ -125,7 +129,7 @@
     letter-spacing: 1px;
     line-height: 108px;
     text-align: right;
-    transform: translateY(var(--top-align-nudge));
+    transform: translateY(var(--top-align-small));
   }
 
   .ticker-value {
@@ -139,7 +143,7 @@
     line-height: 1;
     text-align: right;
     justify-self: end;
-    transform: translateY(var(--top-align-nudge));
+    transform: translateY(var(--top-align-large));
   }
 
   .spark-wrap {
@@ -163,7 +167,7 @@
     gap: 6px;
     line-height: 1;
     text-align: right;
-    transform: translateY(var(--top-align-nudge));
+    transform: translateY(var(--top-align-small));
   }
 
   .change-abs {
@@ -201,7 +205,7 @@
     justify-content: center;
     font-size: 92px;
     line-height: 108px;
-    transform: translateY(var(--top-align-nudge));
+    transform: translateY(var(--top-align-arrow));
   }
 
   .up { color: var(--up); }
@@ -325,53 +329,6 @@ function animateMetricValue(el, fromValue, toValue, formatter, durationMs = 1500
   requestAnimationFrame(tick);
 }
 
-function renderTicker(data) {
-  const bar = document.getElementById('tickerBar');
-  bar.innerHTML = data.map((t, idx) => {
-    const dir = t.trend;
-    const cls = dir === 'up' ? 'up' : 'down';
-    const arrow = dir === 'up' ? '▲' : '▼';
-    const spark = makeSvgSpark(dir);
-    return `
-      <div class="ticker-item">
-        <div class="ticker-content">
-          <div class="ticker-label">${t.label}</div>
-          <div class="ticker-value" data-idx="${idx}">${formatPrice(t.value)}</div>
-          <div class="spark-wrap">${spark}</div>
-          <div class="ticker-change ${cls}">
-            <span class="change-abs"><span class="change-abs-val" data-idx="${idx}">${formatSignedChange(t.change)}</span></span>
-            <span class="change-pct"><span class="pct-open">(</span><span class="pct-core" data-idx="${idx}">${formatSignedPct(t.pct)}</span><span class="pct-close">)</span></span>
-          </div>
-          <span class="arrow ${cls}">${arrow}</span>
-        </div>
-      </div>`;
-  }).join('');
-
-  const valueEls = bar.querySelectorAll('.ticker-value');
-  valueEls.forEach((el, idx) => {
-    const target = Math.round(data[idx].value);
-    const from = displayedValueByIndex.has(idx) ? displayedValueByIndex.get(idx) : target;
-    animateTickerValue(el, from, target);
-    displayedValueByIndex.set(idx, target);
-  });
-
-  const changeEls = bar.querySelectorAll('.change-abs-val');
-  changeEls.forEach((el, idx) => {
-    const target = Number(data[idx].change);
-    const from = displayedChangeByIndex.has(idx) ? displayedChangeByIndex.get(idx) : target;
-    animateMetricValue(el, from, target, formatSignedChange);
-    displayedChangeByIndex.set(idx, target);
-  });
-
-  const pctEls = bar.querySelectorAll('.pct-core');
-  pctEls.forEach((el, idx) => {
-    const target = Number(data[idx].pct);
-    const from = displayedPctByIndex.has(idx) ? displayedPctByIndex.get(idx) : target;
-    animateMetricValue(el, from, target, formatSignedPct);
-    displayedPctByIndex.set(idx, target);
-  });
-}
-
 function simulateMockStep(arr) {
   return arr.map(t => {
     const delta = (Math.random() - 0.5) * 2;
@@ -389,6 +346,11 @@ let mockTimerId = null;
 const displayedValueByIndex = new Map();
 const displayedChangeByIndex = new Map();
 const displayedPctByIndex = new Map();
+const pixelsPerSecond = 40;
+let cycleWidth = 0;
+let crawlOffset = 0;
+let crawlRafId = 0;
+let crawlLastTs = 0;
 
 function setTickerData(nextData) {
   const normalized = normalizeTickerData(nextData);
@@ -415,6 +377,93 @@ window.stopMockUpdates = stopMockUpdates;
 
 setTickerData(tickers);
 startMockUpdates(3000);
+
+function renderTicker(data) {
+  const bar = document.getElementById('tickerBar');
+  const renderedData = data.concat(data);
+  bar.innerHTML = renderedData.map((t, idx) => {
+    const sourceIdx = idx % data.length;
+    const dir = t.trend;
+    const cls = dir === 'up' ? 'up' : 'down';
+    const arrow = dir === 'up' ? '▲' : '▼';
+    const spark = makeSvgSpark(dir);
+    return `
+      <div class="ticker-item">
+        <div class="ticker-content">
+          <div class="ticker-label">${t.label}</div>
+          <div class="ticker-value" data-idx="${sourceIdx}">${formatPrice(t.value)}</div>
+          <div class="spark-wrap">${spark}</div>
+          <div class="ticker-change ${cls}">
+            <span class="change-abs"><span class="change-abs-val" data-idx="${sourceIdx}">${formatSignedChange(t.change)}</span></span>
+            <span class="change-pct"><span class="pct-open">(</span><span class="pct-core" data-idx="${sourceIdx}">${formatSignedPct(t.pct)}</span><span class="pct-close">)</span></span>
+          </div>
+          <span class="arrow ${cls}">${arrow}</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  cycleWidth = SECTION_WIDTH * data.length;
+  bar.style.width = `${SECTION_WIDTH * renderedData.length}px`;
+  bar.style.transform = `translateX(${-crawlOffset}px)`;
+
+  const valueEls = bar.querySelectorAll('.ticker-value');
+  valueEls.forEach((el, idx) => {
+    const sourceIdx = idx % data.length;
+    const target = Math.round(data[sourceIdx].value);
+    const from = displayedValueByIndex.has(sourceIdx) ? displayedValueByIndex.get(sourceIdx) : target;
+    animateTickerValue(el, from, target);
+    displayedValueByIndex.set(sourceIdx, target);
+  });
+
+  const changeEls = bar.querySelectorAll('.change-abs-val');
+  changeEls.forEach((el, idx) => {
+    const sourceIdx = idx % data.length;
+    const target = Number(data[sourceIdx].change);
+    const from = displayedChangeByIndex.has(sourceIdx) ? displayedChangeByIndex.get(sourceIdx) : target;
+    animateMetricValue(el, from, target, formatSignedChange);
+    displayedChangeByIndex.set(sourceIdx, target);
+  });
+
+  const pctEls = bar.querySelectorAll('.pct-core');
+  pctEls.forEach((el, idx) => {
+    const sourceIdx = idx % data.length;
+    const target = Number(data[sourceIdx].pct);
+    const from = displayedPctByIndex.has(sourceIdx) ? displayedPctByIndex.get(sourceIdx) : target;
+    animateMetricValue(el, from, target, formatSignedPct);
+    displayedPctByIndex.set(sourceIdx, target);
+  });
+}
+
+function stepCrawl(ts) {
+  if (!crawlLastTs) crawlLastTs = ts;
+  const dt = (ts - crawlLastTs) / 1000;
+  crawlLastTs = ts;
+  crawlOffset += pixelsPerSecond * dt;
+  if (cycleWidth > 0 && crawlOffset >= cycleWidth) {
+    crawlOffset -= cycleWidth;
+  }
+  const bar = document.getElementById('tickerBar');
+  if (bar) bar.style.transform = `translateX(${-crawlOffset}px)`;
+  crawlRafId = requestAnimationFrame(stepCrawl);
+}
+
+function startCrawl() {
+  if (crawlRafId) cancelAnimationFrame(crawlRafId);
+  crawlLastTs = 0;
+  crawlRafId = requestAnimationFrame(stepCrawl);
+}
+
+window.tickerControl = {
+  start() {
+    startCrawl();
+  },
+  stop() {
+    if (crawlRafId) cancelAnimationFrame(crawlRafId);
+    crawlRafId = 0;
+  }
+};
+
+startCrawl();
 
 function scaleCanvasToViewport() {
   const canvas = document.getElementById('tickerCanvas');
