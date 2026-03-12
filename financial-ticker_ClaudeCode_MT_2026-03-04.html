@@ -21,15 +21,15 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --section-width: 2534.2857;
+    --section-width: 2012.2224;
     --design-width: 14080;
     --design-height: 360;
-    --content-top: 51.0281px;
-    --top-align-small: -14px;
-    --top-align-large: -40px;
-    --top-align-arrow: -14px;
-    --divider-height: 308.9719px;
-    --section-right-pad: 98.5133px;
+    --content-top: 40.5163px;
+    --top-align-small: -11.116px;
+    --top-align-large: -31.76px;
+    --top-align-arrow: -11.116px;
+    --divider-height: 245.3247px;
+    --section-right-pad: 78.2206px;
     --bar-bg: #111111;
     --divider: rgb(100, 99, 96);
     --up: rgb(3, 150, 72);
@@ -39,8 +39,8 @@
   }
 
   html, body {
-    width: 100%;
-    height: 100%;
+    width: 14080px;
+    height: 360px;
     margin: 0;
     padding: 0;
     overflow: hidden;
@@ -54,23 +54,8 @@
   body {
     display: block;
     position: relative;
-  }
-
-  .preview-shell {
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
-    position: relative;
-    margin: 0;
-    padding: 0;
-  }
-
-  .preview-scale {
-    position: absolute;
     top: 0;
     left: 0;
-    transform-origin: top left;
-    will-change: transform;
   }
 
   .ticker-stage {
@@ -126,7 +111,7 @@
     position: absolute;
     right: 0;
     top: var(--content-top);
-    width: 7px;
+    width: 5.558px;
     height: var(--divider-height);
     background: var(--divider);
   }
@@ -136,7 +121,7 @@
     position: absolute;
     left: 0;
     top: var(--content-top);
-    width: 7px;
+    width: 5.558px;
     height: var(--divider-height);
     background: var(--divider);
   }
@@ -148,17 +133,17 @@
     right: var(--section-right-pad);
     display: grid;
     align-items: start;
-    grid-template-columns: 683.3563px 54.0936px minmax(0, 1fr) max-content 98.5133px 625.1313px 98.5133px max-content 38.3596px 66px;
+    grid-template-columns: 542.1859px 42.9483px minmax(0, 1fr) max-content 78.2206px 496.3532px 78.2206px max-content 30.4618px 52.404px;
   }
 
   .ticker-label {
     grid-column: 1;
     font-family: "MORN Intrinsic Web Bold", sans-serif;
     font-weight: 700;
-    font-size: 90px;
+    font-size: 71.46px;
     color: var(--label);
-    letter-spacing: 1px;
-    line-height: 108px;
+    letter-spacing: 0.794px;
+    line-height: 85.752px;
     text-align: right;
     transform: translateY(var(--top-align-small));
   }
@@ -167,9 +152,9 @@
     grid-column: 4;
     font-family: "MORN Intrinsic Web Regular", sans-serif;
     font-weight: 400;
-    font-size: 235px;
+    font-size: 186.59px;
     color: var(--value);
-    letter-spacing: -2px;
+    letter-spacing: -1.588px;
     font-variant-numeric: tabular-nums;
     line-height: 1;
     text-align: right;
@@ -179,14 +164,14 @@
 
   .spark-wrap {
     grid-column: 6;
-    width: 625.1313px;
-    height: 220px;
+    width: 496.3532px;
+    height: 174.68px;
     justify-self: center;
   }
 
   .chart-spark {
-    width: 625.1313px;
-    height: 220px;
+    width: 496.3532px;
+    height: 174.68px;
     margin-top: 0;
   }
 
@@ -195,7 +180,7 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 6px;
+    gap: 4.764px;
     line-height: 1;
     text-align: right;
     transform: translateY(var(--top-align-small));
@@ -204,8 +189,8 @@
   .change-abs {
     font-family: "MORN Intrinsic Web Regular", sans-serif;
     font-weight: 400;
-    font-size: 90px;
-    line-height: 108px;
+    font-size: 71.46px;
+    line-height: 85.752px;
     font-variant-numeric: tabular-nums;
   }
   .change-pct {
@@ -214,8 +199,8 @@
     align-items: flex-start;
     font-family: "MORN Intrinsic Web Regular", sans-serif;
     font-weight: 400;
-    font-size: 90px;
-    line-height: 108px;
+    font-size: 71.46px;
+    line-height: 85.752px;
     font-variant-numeric: tabular-nums;
     opacity: 0.85;
   }
@@ -230,12 +215,12 @@
 
   .arrow {
     grid-column: 10;
-    width: 66px;
+    width: 52.404px;
     display: inline-flex;
     align-items: flex-start;
     justify-content: center;
-    font-size: 92px;
-    line-height: 108px;
+    font-size: 73.048px;
+    line-height: 85.752px;
     transform: translateY(var(--top-align-arrow));
   }
 
@@ -244,19 +229,14 @@
 </style>
 </head>
 <body>
-<div class="preview-shell">
-  <div class="preview-scale" id="previewScale">
-    <div class="ticker-stage">
-      <div class="ticker-canvas" id="tickerCanvas">
-        <div class="ticker-bar" id="tickerBar"></div>
-      </div>
-    </div>
+<div class="ticker-stage">
+  <div class="ticker-canvas" id="tickerCanvas">
+    <div class="ticker-bar" id="tickerBar"></div>
   </div>
 </div>
 
 <script>
-const ENABLE_PREVIEW_SCALE = true;
-const SECTION_WIDTH = 2534.2857;
+const SECTION_WIDTH = 2012.2224;
 const DESIGN_WIDTH = 14080;
 const DESIGN_HEIGHT = 360;
 const tickers = [
@@ -272,21 +252,6 @@ document.documentElement.style.setProperty('--section-width', SECTION_WIDTH);
 document.documentElement.style.setProperty('--design-width', DESIGN_WIDTH);
 document.documentElement.style.setProperty('--design-height', DESIGN_HEIGHT);
 
-function applyPreviewScale() {
-  const scaleWrap = document.getElementById('previewScale');
-  if (!scaleWrap) return;
-  if (!ENABLE_PREVIEW_SCALE) {
-    scaleWrap.style.transform = 'scale(1)';
-    scaleWrap.style.width = `${DESIGN_WIDTH}px`;
-    scaleWrap.style.height = `${DESIGN_HEIGHT}px`;
-    return;
-  }
-  const scale = Math.min(window.innerWidth / DESIGN_WIDTH, window.innerHeight / DESIGN_HEIGHT);
-  scaleWrap.style.transform = `scale(${scale})`;
-  scaleWrap.style.width = `${DESIGN_WIDTH}px`;
-  scaleWrap.style.height = `${DESIGN_HEIGHT}px`;
-}
-
 function generateSparkPath(trend, w, h, points = 20) {
   const pts = [];
   let y = h / 2;
@@ -298,7 +263,7 @@ function generateSparkPath(trend, w, h, points = 20) {
   return "M " + pts.map(p => p.join(",")).join(" L ");
 }
 
-function makeSvgSpark(trend, w = 625.1313, h = 220) {
+function makeSvgSpark(trend, w = 496.3532, h = 174.68) {
   const color = trend === 'up' ? '#039648' : '#e32926';
   const path = generateSparkPath(trend, w, h);
   const fillPath = path + ` L ${w},${h} L 0,${h} Z`;
@@ -312,7 +277,7 @@ function makeSvgSpark(trend, w = 625.1313, h = 220) {
         </linearGradient>
       </defs>
       <path d="${fillPath}" fill="url(#${gradId})" />
-      <path d="${path}" fill="none" stroke="${color}" stroke-width="4" stroke-linejoin="round"/>
+      <path d="${path}" fill="none" stroke="${color}" stroke-width="3.176" stroke-linejoin="round"/>
     </svg>`;
 }
 
@@ -396,7 +361,7 @@ let mockTimerId = null;
 const displayedValueByIndex = new Map();
 const displayedChangeByIndex = new Map();
 const displayedPctByIndex = new Map();
-const pixelsPerSecond = 40;
+const pixelsPerSecond = 31.76;
 let cycleWidth = 0;
 let crawlOffset = 0;
 let crawlRafId = 0;
@@ -513,8 +478,6 @@ window.tickerControl = {
   }
 };
 
-applyPreviewScale();
-window.addEventListener('resize', applyPreviewScale);
 startCrawl();
 </script>
 </body>
