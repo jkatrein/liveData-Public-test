@@ -58,6 +58,23 @@
     left: 0;
   }
 
+  .preview-shell {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+    margin: 0;
+    padding: 0;
+  }
+
+  .preview-scale {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: top left;
+    will-change: transform;
+  }
+
   .ticker-stage {
     width: 14080px;
     min-width: 14080px;
@@ -229,13 +246,18 @@
 </style>
 </head>
 <body>
-<div class="ticker-stage">
-  <div class="ticker-canvas" id="tickerCanvas">
-    <div class="ticker-bar" id="tickerBar"></div>
+<div class="preview-shell">
+  <div class="preview-scale" id="previewScale">
+    <div class="ticker-stage">
+      <div class="ticker-canvas" id="tickerCanvas">
+        <div class="ticker-bar" id="tickerBar"></div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
+const ENABLE_PREVIEW_SCALE = true;
 const SECTION_WIDTH = 2012.2224;
 const DESIGN_WIDTH = 14080;
 const DESIGN_HEIGHT = 360;
@@ -251,6 +273,21 @@ const tickers = [
 document.documentElement.style.setProperty('--section-width', SECTION_WIDTH);
 document.documentElement.style.setProperty('--design-width', DESIGN_WIDTH);
 document.documentElement.style.setProperty('--design-height', DESIGN_HEIGHT);
+
+function applyPreviewScale() {
+  const scaleWrap = document.getElementById('previewScale');
+  if (!scaleWrap) return;
+  if (!ENABLE_PREVIEW_SCALE) {
+    scaleWrap.style.transform = 'scale(1)';
+    scaleWrap.style.width = `${DESIGN_WIDTH}px`;
+    scaleWrap.style.height = `${DESIGN_HEIGHT}px`;
+    return;
+  }
+  const scale = Math.min(window.innerWidth / DESIGN_WIDTH, window.innerHeight / DESIGN_HEIGHT);
+  scaleWrap.style.transform = `scale(${scale})`;
+  scaleWrap.style.width = `${DESIGN_WIDTH}px`;
+  scaleWrap.style.height = `${DESIGN_HEIGHT}px`;
+}
 
 function generateSparkPath(trend, w, h, points = 20) {
   const pts = [];
@@ -478,6 +515,8 @@ window.tickerControl = {
   }
 };
 
+applyPreviewScale();
+window.addEventListener('resize', applyPreviewScale);
 startCrawl();
 </script>
 </body>
